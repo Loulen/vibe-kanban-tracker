@@ -122,6 +122,7 @@ export class MetricsCollector {
    */
   private addMetric(metric: MetricRecord): void {
     this.metrics.push(metric);
+    console.log('[vibe-tracker] Metric recorded:', metric.name, 'value:', metric.value, 'total queued:', this.metrics.length);
 
     // Trim if exceeding max queue size (FIFO - remove oldest)
     if (this.metrics.length > this.maxQueueSize) {

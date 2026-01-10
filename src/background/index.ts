@@ -377,11 +377,13 @@ browser.runtime.onMessage.addListener(
  */
 async function exportMetrics(): Promise<void> {
   if (!isInitialized) {
+    console.log('[vibe-tracker] Export skipped - not initialized');
     return;
   }
 
   const metrics = metricsCollector.flush();
   if (metrics.length === 0) {
+    console.log('[vibe-tracker] Export cycle - no metrics to export');
     // Clear any pending metrics in storage
     await storageManager.clearPendingMetrics();
     return;
