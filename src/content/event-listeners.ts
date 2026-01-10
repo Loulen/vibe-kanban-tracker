@@ -181,6 +181,7 @@ export function setupHumanInterventionListeners(): void {
     // Check for Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux)
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       const target = event.target as HTMLElement;
+      console.log('[vibe-tracker] Ctrl/Cmd+Enter detected, target:', target.tagName, target.getAttribute('role'), target.isContentEditable);
 
       // Check if the target is a contenteditable element or role="textbox"
       const isContentEditable =
@@ -191,6 +192,7 @@ export function setupHumanInterventionListeners(): void {
         (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text');
 
       if (isContentEditable) {
+        console.log('[vibe-tracker] Human intervention detected via keyboard shortcut');
         const message: HumanInterventionMessage = {
           type: 'HUMAN_INTERVENTION',
           payload: {
@@ -215,13 +217,18 @@ export function setupHumanInterventionListeners(): void {
     // Get button text content
     const buttonText = button.textContent?.trim() || '';
 
+    // Log all button clicks for debugging
+    console.log('[vibe-tracker] Button clicked:', buttonText);
+
     // Check if button text matches intervention patterns
-    const interventionPatterns = ['Create Workspace', 'Send', 'Start'];
+    // Extended patterns to catch more submission actions
+    const interventionPatterns = ['Create Workspace', 'Send', 'Start', 'Submit', 'Run', 'Execute', 'Launch', 'Deploy', 'Save', 'Confirm', 'OK', 'Yes', 'Continue', 'Next', 'Done', 'Apply', 'Create'];
     const isIntervention = interventionPatterns.some((pattern) =>
       buttonText.toLowerCase().includes(pattern.toLowerCase())
     );
 
     if (isIntervention) {
+      console.log('[vibe-tracker] Human intervention detected via button:', buttonText);
       const message: HumanInterventionMessage = {
         type: 'HUMAN_INTERVENTION',
         payload: {
