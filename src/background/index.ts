@@ -134,6 +134,8 @@ async function handleGetConfig(): Promise<{
   error?: string;
 }> {
   try {
+    // Ensure storage is loaded before getting config
+    await storageManager.load();
     const config = storageManager.getConfig();
     return { success: true, config };
   } catch (error) {
@@ -177,6 +179,8 @@ async function handleTestConnection(): Promise<{
   error?: string;
 }> {
   try {
+    // Ensure storage is loaded before getting config
+    await storageManager.load();
     const config = storageManager.getConfig();
     const endpoint = config.otelEndpoint;
 
@@ -217,7 +221,7 @@ async function handleTestConnection(): Promise<{
 /**
  * Handle GET_DEBUG_INFO message from options page
  */
-function handleGetDebugInfo(): {
+async function handleGetDebugInfo(): Promise<{
   success: boolean;
   debugInfo?: {
     config: ReturnType<typeof storageManager.getConfig>;
@@ -226,8 +230,10 @@ function handleGetDebugInfo(): {
     isInitialized: boolean;
   };
   error?: string;
-} {
+}> {
   try {
+    // Ensure storage is loaded before getting config
+    await storageManager.load();
     const config = storageManager.getConfig();
     const state = isInitialized ? stateMachine.getState() : null;
     const pendingMetricsCount = storageManager.getPendingMetrics().length;
@@ -263,7 +269,7 @@ browser.runtime.onMessage.addListener(
           return handleTestConnection();
 
         case 'GET_DEBUG_INFO':
-          return Promise.resolve(handleGetDebugInfo());
+          return handleGetDebugInfo();
       }
     }
 
