@@ -1,0 +1,79 @@
+/**
+ * Shared types for the vibe-kanban tracker extension
+ */
+
+import type { ParsedRoute } from '../content/url-parser';
+
+// Message types sent from content script to background script
+export type MessageType =
+  | 'ACTIVITY'
+  | 'SCROLL'
+  | 'FOCUS'
+  | 'BLUR'
+  | 'NAVIGATION'
+  | 'HUMAN_INTERVENTION';
+
+// Base message interface
+export interface BaseMessage {
+  type: MessageType;
+  payload: {
+    route: ParsedRoute;
+    timestamp: number;
+  };
+}
+
+// Activity message (mouse/keyboard)
+export interface ActivityMessage extends BaseMessage {
+  type: 'ACTIVITY';
+  payload: BaseMessage['payload'] & {
+    activityType: 'mouse' | 'keyboard';
+  };
+}
+
+// Scroll message
+export interface ScrollMessage extends BaseMessage {
+  type: 'SCROLL';
+  payload: BaseMessage['payload'] & {
+    scrollPosition: number;
+    scrollPercentage: number;
+  };
+}
+
+// Focus message
+export interface FocusMessage extends BaseMessage {
+  type: 'FOCUS';
+}
+
+// Blur message
+export interface BlurMessage extends BaseMessage {
+  type: 'BLUR';
+}
+
+// Navigation message (SPA route change)
+export interface NavigationMessage extends BaseMessage {
+  type: 'NAVIGATION';
+  payload: BaseMessage['payload'] & {
+    previousRoute?: ParsedRoute;
+  };
+}
+
+// Human intervention message (user sending message to Claude)
+export interface HumanInterventionMessage extends BaseMessage {
+  type: 'HUMAN_INTERVENTION';
+  payload: BaseMessage['payload'] & {
+    triggerType: 'keyboard_shortcut' | 'button_click';
+    buttonText?: string;
+  };
+}
+
+// Union type of all message types
+export type ContentMessage =
+  | ActivityMessage
+  | ScrollMessage
+  | FocusMessage
+  | BlurMessage
+  | NavigationMessage
+  | HumanInterventionMessage;
+
+// Re-export ParsedRoute for convenience
+export type { ParsedRoute } from '../content/url-parser';

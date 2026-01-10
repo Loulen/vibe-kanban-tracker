@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Vibe Kanban Tracker",
+  "version": "1.0.0",
+  "description": "Track user activity on vibe-kanban and export telemetry to OpenTelemetry",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:3069/*",
+    "http://localhost:4318/*"
+  ],
+  "background": {
+    "scripts": ["background/index.js"],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3069/*"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon-16.svg",
+    "48": "icons/icon-48.svg",
+    "128": "icons/icon-128.svg"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "vibe-kanban-tracker@localhost",
+      "strict_min_version": "109.0"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Kanban Tracker Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Vibe Kanban Tracker Settings</h1>
+
+    <!-- Enabled Toggle -->
+    <div class="form-group checkbox-group">
+      <label for="enabled">
+        <input type="checkbox" id="enabled">
+        <span class="checkbox-label">Enable Tracking</span>
+      </label>
+      <p class="help-text">When disabled, no activity data will be collected or sent.</p>
+    </div>
+
+    <!-- Machine ID -->
+    <div class="form-group">
+      <label for="machineId">Machine ID</label>
+      <input type="text" id="machineId" placeholder="e.g., work-laptop, home-desktop">
+      <p class="help-text">A friendly name to identify this machine in telemetry data.</p>
+    </div>
+
+    <!-- Idle Timeout -->
+    <div class="form-group">
+      <label for="idleTimeout">
+        Idle Timeout: <span id="idleTimeoutValue">60s</span>
+      </label>
+      <input type="range" id="idleTimeout" min="30" max="300" step="10" value="60">
+      <p class="help-text">Time before the tracker considers you idle (30s - 5min).</p>
+    </div>
+
+    <!-- OTel Endpoint -->
+    <div class="form-group">
+      <label for="otelEndpoint">OpenTelemetry Endpoint</label>
+      <input type="text" id="otelEndpoint" placeholder="http://localhost:4318">
+      <p class="help-text">The OTLP/HTTP endpoint for sending metrics.</p>
+    </div>
+
+    <!-- Test Connection -->
+    <div class="form-group">
+      <button id="testConnection" class="btn btn-secondary">Test Connection</button>
+      <span id="connectionStatus" class="status-indicator"></span>
+    </div>
+
+    <!-- Debug Info -->
+    <details class="debug-section">
+      <summary>Debug Info</summary>
+      <pre id="debugInfo">Loading...</pre>
+      <button id="refreshDebug" class="btn btn-small">Refresh</button>
+    </details>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
