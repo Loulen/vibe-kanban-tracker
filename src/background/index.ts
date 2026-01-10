@@ -92,8 +92,11 @@ function setupStateChangeCallback(): void {
       // Record active time when leaving active state
       if (prev === 'active' && activeStateStartTime !== null) {
         const durationMs = Date.now() - activeStateStartTime;
+        console.log('[vibe-tracker] Recording active time:', { durationMs, hasRoute: !!context.currentRoute, routeType: context.currentRoute?.type });
         if (context.currentRoute) {
           metricsCollector.recordActiveTime(durationMs, context.currentRoute, machineId);
+        } else {
+          console.warn('[vibe-tracker] No currentRoute, skipping active time metric');
         }
         activeStateStartTime = null;
       }

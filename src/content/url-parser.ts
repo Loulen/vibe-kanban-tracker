@@ -20,8 +20,8 @@ const ROUTE_PATTERNS = {
   workspace_create: /^\/workspaces\/create\/?$/i,
   // /workspaces/:workspaceId
   workspace: new RegExp(`^/workspaces/(${UUID_PATTERN})/?$`, 'i'),
-  // /projects/:projectId/tasks/:taskId
-  task_detail: new RegExp(`^/projects/(${UUID_PATTERN})/tasks/(${UUID_PATTERN})/?$`, 'i'),
+  // /projects/:projectId/tasks/:taskId/attempts/:attemptId (with optional attempts suffix)
+  task_detail: new RegExp(`^/projects/(${UUID_PATTERN})/tasks/(${UUID_PATTERN})(?:/attempts/(${UUID_PATTERN}))?/?$`, 'i'),
   // /projects/:projectId/tasks
   task_board: new RegExp(`^/projects/(${UUID_PATTERN})/tasks/?$`, 'i'),
 };
