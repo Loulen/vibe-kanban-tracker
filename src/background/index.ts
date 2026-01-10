@@ -9,7 +9,7 @@ import { MetricsCollector } from './metrics-collector';
 import { OTelExporter } from './otel-exporter';
 import { StorageManager } from './storage-manager';
 import { EXPORT_INTERVAL_MS } from '../shared/constants';
-import type { ContentMessage, ScrollMessage, HumanInterventionMessage } from '../shared/types';
+import type { ContentMessage, ScrollMessage, HumanInterventionMessage, TypingMessage, MessageSentMessage } from '../shared/types';
 
 console.log('[vibe-tracker] Background script loaded');
 
@@ -367,6 +367,34 @@ browser.runtime.onMessage.addListener(
             triggerType: hiMsg.payload.triggerType,
             buttonText: hiMsg.payload.buttonText,
           });
+        }
+        break;
+
+      case 'TYPING':
+        // Typing counts as activity
+        stateMachine.transition({ type: 'ACTIVITY' });
+        {
+          const typingMsg = message as TypingMessage;
+          if (typingMsg.payload?.route) {
+            stateMachine.transition({ type: 'NAVIGATE', route: typingMsg.payload.route });
+            // Record characters typed metric
+            metricsCollector.recordCharactersTyped(typingMsg.payload.characterCount, typingMsg.payload.route, machineId);
+          }
+          console.log('[vibe-tracker] Characters typed:', typingMsg.payload.characterCount);
+        }
+        break;
+
+      case 'MESSAGE_SENT':
+        // Message sent counts as activity
+        stateMachine.transition({ type: 'ACTIVITY' });
+        {
+          const msMsg = message as MessageSentMessage;
+          if (msMsg.payload?.route) {
+            stateMachine.transition({ type: 'NAVIGATE', route: msMsg.payload.route });
+            // Record message sent metric with length
+            metricsCollector.recordMessageSent(msMsg.payload.messageLength, msMsg.payload.route, machineId);
+          }
+          console.log('[vibe-tracker] Message sent, length:', msMsg.payload.messageLength);
         }
         break;
     }

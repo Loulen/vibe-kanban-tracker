@@ -92,6 +92,50 @@ export class MetricsCollector {
   }
 
   /**
+   * Record characters typed
+   */
+  recordCharactersTyped(
+    characterCount: number,
+    route: ParsedRoute,
+    machineId: string
+  ): void {
+    this.addMetric({
+      name: 'vibe_kanban.characters_typed.count',
+      type: 'counter',
+      value: characterCount,
+      timestamp: Date.now(),
+      attributes: this.buildRouteAttributes(route, machineId),
+    });
+  }
+
+  /**
+   * Record message sent with its length
+   */
+  recordMessageSent(
+    messageLength: number,
+    route: ParsedRoute,
+    machineId: string
+  ): void {
+    // Record message count
+    this.addMetric({
+      name: 'vibe_kanban.message_sent.count',
+      type: 'counter',
+      value: 1,
+      timestamp: Date.now(),
+      attributes: this.buildRouteAttributes(route, machineId),
+    });
+
+    // Record message length
+    this.addMetric({
+      name: 'vibe_kanban.message_sent.length',
+      type: 'gauge',
+      value: messageLength,
+      timestamp: Date.now(),
+      attributes: this.buildRouteAttributes(route, machineId),
+    });
+  }
+
+  /**
    * Flush all metrics and clear the queue
    * Returns the flushed metrics
    */

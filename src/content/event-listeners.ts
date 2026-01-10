@@ -11,14 +11,20 @@ import type {
   BlurMessage,
   NavigationMessage,
   HumanInterventionMessage,
+  TypingMessage,
+  MessageSentMessage,
 } from '../shared/types';
 
 // Throttle intervals in milliseconds
 const ACTIVITY_THROTTLE_MS = 1000;
 const SCROLL_THROTTLE_MS = 500;
+const TYPING_THROTTLE_MS = 2000;
 
 // Current route state
 let currentRoute: ParsedRoute = parseVibeKanbanUrl(window.location.href);
+
+// Track accumulated characters typed since last report
+let charactersTypedSinceLastReport = 0;
 
 /**
  * Creates a throttled version of a function
@@ -62,7 +68,7 @@ export function getCurrentRoute(): ParsedRoute {
  * Send message to background script
  */
 async function sendMessage(
-  message: ActivityMessage | ScrollMessage | FocusMessage | BlurMessage | NavigationMessage | HumanInterventionMessage
+  message: ActivityMessage | ScrollMessage | FocusMessage | BlurMessage | NavigationMessage | HumanInterventionMessage | TypingMessage | MessageSentMessage
 ): Promise<void> {
   try {
     await browser.runtime.sendMessage(message);
@@ -170,6 +176,43 @@ export function setupFocusListeners(): void {
 }
 
 /**
+ * Get text content from an input element
+ */
+function getInputTextContent(element: HTMLElement): string {
+  if (element.tagName === 'TEXTAREA') {
+    return (element as HTMLTextAreaElement).value;
+  }
+  if (element.tagName === 'INPUT') {
+    return (element as HTMLInputElement).value;
+  }
+  // For contenteditable elements
+  return element.textContent || element.innerText || '';
+}
+
+/**
+ * Find the active text input element on the page
+ */
+function findActiveTextInput(): HTMLElement | null {
+  const activeElement = document.activeElement as HTMLElement;
+  if (!activeElement) return null;
+
+  // Check if active element is a text input
+  if (
+    activeElement.isContentEditable ||
+    activeElement.getAttribute('contenteditable') === 'true' ||
+    activeElement.getAttribute('role') === 'textbox' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    (activeElement.tagName === 'INPUT' && (activeElement as HTMLInputElement).type === 'text')
+  ) {
+    return activeElement;
+  }
+
+  // Search for contenteditable elements within the active element
+  const contentEditable = activeElement.querySelector('[contenteditable="true"], [role="textbox"], textarea');
+  return contentEditable as HTMLElement | null;
+}
+
+/**
  * Setup human intervention detection
  * Detects:
  * - Cmd+Enter / Ctrl+Enter in contenteditable elements
@@ -192,8 +235,14 @@ export function setupHumanInterventionListeners(): void {
         (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text');
 
       if (isContentEditable) {
-        console.log('[vibe-tracker] Human intervention detected via keyboard shortcut');
-        const message: HumanInterventionMessage = {
+        // Get the message content before it gets cleared
+        const messageContent = getInputTextContent(target);
+        const messageLength = messageContent.length;
+
+        console.log('[vibe-tracker] Human intervention detected via keyboard shortcut, message length:', messageLength);
+
+        // Send human intervention message
+        const hiMessage: HumanInterventionMessage = {
           type: 'HUMAN_INTERVENTION',
           payload: {
             route: currentRoute,
@@ -201,7 +250,21 @@ export function setupHumanInterventionListeners(): void {
             triggerType: 'keyboard_shortcut',
           },
         };
-        sendMessage(message);
+        sendMessage(hiMessage);
+
+        // Send message sent event with length
+        if (messageLength > 0) {
+          const msMessage: MessageSentMessage = {
+            type: 'MESSAGE_SENT',
+            payload: {
+              route: currentRoute,
+              timestamp: Date.now(),
+              messageLength,
+              triggerType: 'keyboard_shortcut',
+            },
+          };
+          sendMessage(msMessage);
+        }
       }
     }
   };
@@ -228,8 +291,15 @@ export function setupHumanInterventionListeners(): void {
     );
 
     if (isIntervention) {
-      console.log('[vibe-tracker] Human intervention detected via button:', buttonText);
-      const message: HumanInterventionMessage = {
+      // Try to find the text input and get its content
+      const textInput = findActiveTextInput();
+      const messageContent = textInput ? getInputTextContent(textInput) : '';
+      const messageLength = messageContent.length;
+
+      console.log('[vibe-tracker] Human intervention detected via button:', buttonText, 'message length:', messageLength);
+
+      // Send human intervention message
+      const hiMessage: HumanInterventionMessage = {
         type: 'HUMAN_INTERVENTION',
         payload: {
           route: currentRoute,
@@ -238,12 +308,72 @@ export function setupHumanInterventionListeners(): void {
           buttonText,
         },
       };
-      sendMessage(message);
+      sendMessage(hiMessage);
+
+      // Send message sent event with length (if we found content)
+      if (messageLength > 0) {
+        const msMessage: MessageSentMessage = {
+          type: 'MESSAGE_SENT',
+          payload: {
+            route: currentRoute,
+            timestamp: Date.now(),
+            messageLength,
+            triggerType: 'button_click',
+          },
+        };
+        sendMessage(msMessage);
+      }
     }
   };
 
   document.addEventListener('keydown', handleKeyboardShortcut);
   document.addEventListener('click', handleButtonClick);
+}
+
+/**
+ * Setup typing tracker
+ * Counts characters typed and reports periodically
+ */
+export function setupTypingTracker(): void {
+  const sendTypingReport = throttle(() => {
+    if (charactersTypedSinceLastReport > 0) {
+      console.log('[vibe-tracker] Reporting characters typed:', charactersTypedSinceLastReport);
+      const message: TypingMessage = {
+        type: 'TYPING',
+        payload: {
+          route: currentRoute,
+          timestamp: Date.now(),
+          characterCount: charactersTypedSinceLastReport,
+        },
+      };
+      sendMessage(message);
+      charactersTypedSinceLastReport = 0;
+    }
+  }, TYPING_THROTTLE_MS);
+
+  const handleInput = (event: Event): void => {
+    const target = event.target as HTMLElement;
+
+    // Only track input in text fields
+    const isTextInput =
+      target.isContentEditable ||
+      target.getAttribute('contenteditable') === 'true' ||
+      target.getAttribute('role') === 'textbox' ||
+      target.tagName === 'TEXTAREA' ||
+      (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text');
+
+    if (isTextInput && event instanceof InputEvent) {
+      // Count characters added (data is the inserted text)
+      const charsAdded = event.data?.length || 0;
+      if (charsAdded > 0) {
+        charactersTypedSinceLastReport += charsAdded;
+        sendTypingReport();
+      }
+    }
+  };
+
+  // Use input event for real-time character tracking
+  document.addEventListener('input', handleInput, { passive: true });
 }
 
 /**
@@ -304,6 +434,7 @@ export function initializeEventListeners(): void {
   setupFocusListeners();
   setupHumanInterventionListeners();
   setupNavigationListener();
+  setupTypingTracker();
 
   // Send initial focus message if page is visible
   if (document.visibilityState === 'visible') {

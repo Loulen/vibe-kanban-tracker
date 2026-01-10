@@ -11,7 +11,9 @@ export type MessageType =
   | 'FOCUS'
   | 'BLUR'
   | 'NAVIGATION'
-  | 'HUMAN_INTERVENTION';
+  | 'HUMAN_INTERVENTION'
+  | 'TYPING'
+  | 'MESSAGE_SENT';
 
 // Base message interface
 export interface BaseMessage {
@@ -66,6 +68,23 @@ export interface HumanInterventionMessage extends BaseMessage {
   };
 }
 
+// Typing message (character count updates)
+export interface TypingMessage extends BaseMessage {
+  type: 'TYPING';
+  payload: BaseMessage['payload'] & {
+    characterCount: number;
+  };
+}
+
+// Message sent (captures message length on submission)
+export interface MessageSentMessage extends BaseMessage {
+  type: 'MESSAGE_SENT';
+  payload: BaseMessage['payload'] & {
+    messageLength: number;
+    triggerType: 'keyboard_shortcut' | 'button_click';
+  };
+}
+
 // Union type of all message types
 export type ContentMessage =
   | ActivityMessage
@@ -73,7 +92,9 @@ export type ContentMessage =
   | FocusMessage
   | BlurMessage
   | NavigationMessage
-  | HumanInterventionMessage;
+  | HumanInterventionMessage
+  | TypingMessage
+  | MessageSentMessage;
 
 // Re-export ParsedRoute for convenience
 export type { ParsedRoute } from '../content/url-parser';
