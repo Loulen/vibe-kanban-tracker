@@ -256,6 +256,8 @@ async function handleGetDebugInfo(): Promise<{
 // Handle messages from content script and options page
 browser.runtime.onMessage.addListener(
   (message: ContentMessage | OptionsMessage, sender: browser.Runtime.MessageSender) => {
+    console.log('[vibe-tracker] Raw message received:', message.type, 'from:', sender.tab?.url || 'options/popup');
+
     // Handle options page messages (don't require full initialization)
     if ('type' in message) {
       switch (message.type) {
@@ -279,7 +281,7 @@ browser.runtime.onMessage.addListener(
       return Promise.resolve({ received: false, error: 'not_initialized' });
     }
 
-    console.log('[vibe-tracker] Message received:', {
+    console.log('[vibe-tracker] Processing content message:', {
       type: message.type,
       from: sender.tab?.url,
     });

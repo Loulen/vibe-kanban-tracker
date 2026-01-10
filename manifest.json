@@ -9,14 +9,22 @@
   ],
   "host_permissions": [
     "http://localhost:3069/*",
-    "http://localhost:4318/*"
+    "http://127.0.0.1:3069/*",
+    "http://*:3069/*",
+    "http://localhost:4318/*",
+    "http://127.0.0.1:4318/*",
+    "http://*:4318/*"
   ],
   "background": {
     "scripts": ["background/index.js"]
   },
   "content_scripts": [
     {
-      "matches": ["http://localhost:3069/*"],
+      "matches": [
+        "http://localhost:3069/*",
+        "http://127.0.0.1:3069/*",
+        "http://*:3069/*"
+      ],
       "js": ["content/index.js"],
       "run_at": "document_idle"
     }
