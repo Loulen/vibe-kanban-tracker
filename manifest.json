@@ -12,8 +12,7 @@
     "http://localhost:4318/*"
   ],
   "background": {
-    "scripts": ["background/index.js"],
-    "type": "module"
+    "scripts": ["background/index.js"]
   },
   "content_scripts": [
     {
