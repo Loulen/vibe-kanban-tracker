@@ -8,13 +8,26 @@
     "dev": "webpack --mode development --watch",
     "package": "npm run build && cd dist && zip -r ../vibe-kanban-tracker.zip .",
     "sign": "npm run build && web-ext sign --source-dir=dist --channel=unlisted",
-    "lint:ext": "web-ext lint --source-dir=dist"
+    "lint:ext": "web-ext lint --source-dir=dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run --dir tests/unit",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.11.0",
     "@types/webextension-polyfill": "^0.10.7",
+    "@vitest/coverage-v8": "^1.6.0",
     "copy-webpack-plugin": "^12.0.2",
+    "jsdom": "^24.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
+    "vitest": "^1.6.0",
     "web-ext": "^8.4.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
