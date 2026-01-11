@@ -4,6 +4,7 @@
 
 import browser from 'webextension-polyfill';
 import { parseVibeKanbanUrl, type ParsedRoute } from './url-parser';
+import { ensureToggleButtonInjected } from './sidebar/sidebar';
 import type {
   ActivityMessage,
   ScrollMessage,
@@ -404,6 +405,10 @@ export function setupNavigationListener(): void {
         },
       };
       sendMessage(message);
+
+      // Re-inject toggle button after navigation
+      // The function handles duplicate prevention internally
+      ensureToggleButtonInjected();
     }
   };
 

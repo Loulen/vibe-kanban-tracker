@@ -423,9 +423,16 @@ async function restoreLockState(): Promise<void> {
 
 /**
  * Injects the toggle button into the vibe-kanban header
+ * Prevents duplicates by checking if already injected
  */
 function injectToggleButton(): boolean {
   if (!elements) return false;
+
+  // Prevent duplicate injection - check if our button is already in the DOM
+  if (document.body.contains(elements.toggleButton)) {
+    console.log('[vibe-tracker] Toggle button already exists in DOM, skipping injection');
+    return true;
+  }
 
   const logoLink = document.querySelector('a[href="/projects"]');
   const headerContainer = logoLink?.parentElement;
@@ -438,6 +445,29 @@ function injectToggleButton(): boolean {
 
   console.warn('[vibe-tracker] Could not find header container for toggle button');
   return false;
+}
+
+/**
+ * Ensures the toggle button is present in the header
+ * Safe to call multiple times - handles duplicate prevention internally
+ * Called after SPA navigation to re-inject if needed
+ */
+export function ensureToggleButtonInjected(): void {
+  if (!elements) {
+    console.warn('[vibe-tracker] Sidebar not initialized, cannot inject toggle button');
+    return;
+  }
+
+  // Use requestAnimationFrame to ensure DOM is ready after navigation
+  requestAnimationFrame(() => {
+    const injected = injectToggleButton();
+    if (!injected) {
+      // Retry once after a short delay if the header isn't ready yet
+      setTimeout(() => {
+        injectToggleButton();
+      }, 100);
+    }
+  });
 }
 
 /**
@@ -483,6 +513,30 @@ function cleanup(): void {
 }
 
 /**
+ * Sets up a MutationObserver to detect when the header is re-rendered
+ * This handles edge cases where the SPA re-renders without a navigation event
+ */
+function setupHeaderObserver(): void {
+  const observer = new MutationObserver(() => {
+    // Check if our toggle button was removed from the DOM
+    if (elements && !document.body.contains(elements.toggleButton)) {
+      console.log('[vibe-tracker] Toggle button removed from DOM, attempting re-injection');
+      // Debounce re-injection to avoid rapid-fire calls during DOM updates
+      setTimeout(() => {
+        injectToggleButton();
+      }, 50);
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  console.log('[vibe-tracker] Header observer initialized');
+}
+
+/**
  * Initializes the sidebar component
  * Called from content/index.ts
  */
@@ -503,6 +557,9 @@ export function initializeSidebar(): void {
       setTimeout(injectToggleButton, 1000);
     }
   }, 100);
+
+  // Setup header observer to handle SPA re-renders
+  setupHeaderObserver();
 
   // Click outside to close sidebar
   document.addEventListener('click', (event: MouseEvent) => {

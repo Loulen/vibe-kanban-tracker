@@ -1,7 +1,12 @@
 vibe-kanban-tracker.zip
 .env.local
 web-ext-artifacts/
-ai_docs/
+
+# AI documentation - DO NOT ignore, these best practices should be committed
+# The TPM workflow originally suggested ignoring ai_docs/, but we want to track
+# testing strategies and other best practices across the team
+# ai_docs/  # <-- intentionally NOT ignored
+!ai_docs/
 
 # Testing artifacts
 coverage/

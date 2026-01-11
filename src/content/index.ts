@@ -5,7 +5,7 @@
 
 import { parseVibeKanbanUrl } from './url-parser';
 import { initializeEventListeners, getCurrentRoute } from './event-listeners';
-import { initializeSidebar } from './sidebar/sidebar';
+import { initializeSidebar, ensureToggleButtonInjected } from './sidebar/sidebar';
 
 // Log initialization with parsed route info
 const initialRoute = parseVibeKanbanUrl(window.location.href);
@@ -21,4 +21,4 @@ initializeEventListeners();
 initializeSidebar();
 
 // Export for potential use by other modules
-export { parseVibeKanbanUrl, getCurrentRoute };
+export { parseVibeKanbanUrl, getCurrentRoute, ensureToggleButtonInjected };
