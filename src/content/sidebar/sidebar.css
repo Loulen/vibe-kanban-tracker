@@ -1,0 +1,439 @@
+/**
+ * Sidebar styles for Vibe Kanban Tracker
+ * Injected into Shadow DOM for complete style isolation
+ */
+
+/* ==========================================================================
+   CSS Variables
+   ========================================================================== */
+:host {
+  /* Dimensions */
+  --sidebar-width: 320px;
+  --header-height: 48px;
+  --card-gap: 8px;
+  --card-padding: 12px;
+  
+  /* Colors (vibe-kanban light theme) */
+  --bg-sidebar: hsl(0, 0%, 95%);
+  --bg-card: hsl(0, 0%, 89%);
+  --bg-card-hover: hsl(0, 0%, 85%);
+  --text-primary: hsl(0, 0%, 5%);
+  --text-secondary: hsl(0, 0%, 39%);
+  --border-color: hsl(0, 0%, 85%);
+  
+  /* Status colors */
+  --status-inprogress: hsl(217, 91%, 60%);
+  --status-inreview: hsl(32, 95%, 44%);
+  --status-todo: hsl(0, 0%, 56%);
+  --status-done: hsl(117, 38%, 50%);
+  
+  /* Typography */
+  --font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  
+  /* Animation */
+  --transition-duration: 200ms;
+  --transition-timing: ease-out;
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   Toggle Button (injected into header)
+   ========================================================================== */
+.vibe-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-duration) var(--transition-timing);
+}
+
+.vibe-sidebar-toggle:hover {
+  background-color: var(--bg-card);
+}
+
+.vibe-sidebar-toggle:focus {
+  outline: 2px solid var(--status-inprogress);
+  outline-offset: 2px;
+}
+
+.vibe-sidebar-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
+   Sidebar Container
+   ========================================================================== */
+.vibe-sidebar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--header-height));
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform var(--transition-duration) var(--transition-timing);
+}
+
+.vibe-sidebar.open {
+  transform: translateX(0);
+}
+
+/* ==========================================================================
+   Sidebar Header
+   ========================================================================== */
+.vibe-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.vibe-sidebar-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vibe-sidebar-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-duration) var(--transition-timing),
+              color var(--transition-duration) var(--transition-timing);
+}
+
+.vibe-sidebar-close:hover {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.vibe-sidebar-close:focus {
+  outline: 2px solid var(--status-inprogress);
+  outline-offset: 2px;
+}
+
+.vibe-sidebar-close svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
+   Task List Container
+   ========================================================================== */
+.vibe-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+.vibe-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+/* ==========================================================================
+   Task Cards
+   ========================================================================== */
+.vibe-task-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--card-padding);
+  background-color: var(--bg-card);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition-duration) var(--transition-timing);
+}
+
+.vibe-task-card:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.vibe-task-card:focus {
+  outline: 2px solid var(--status-inprogress);
+  outline-offset: 2px;
+}
+
+.vibe-task-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.vibe-task-title {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vibe-task-project {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   Task Badges
+   ========================================================================== */
+.vibe-task-badge {
+  flex-shrink: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.vibe-task-badge--inprogress {
+  background-color: hsla(217, 91%, 60%, 0.15);
+  color: var(--status-inprogress);
+}
+
+.vibe-task-badge--inreview {
+  background-color: hsla(32, 95%, 44%, 0.15);
+  color: var(--status-inreview);
+}
+
+.vibe-task-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.vibe-task-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vibe-task-status-dot.inprogress {
+  background-color: var(--status-inprogress);
+}
+
+.vibe-task-status-dot.inreview {
+  background-color: var(--status-inreview);
+}
+
+.vibe-task-status-dot.todo {
+  background-color: var(--status-todo);
+}
+
+.vibe-task-status-dot.done {
+  background-color: var(--status-done);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.vibe-sidebar-footer {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.vibe-last-updated {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+.vibe-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-lg) * 2);
+  text-align: center;
+  color: var(--text-secondary);
+  min-height: 200px;
+}
+
+.vibe-empty-state-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.vibe-empty-state-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.vibe-empty-state-message {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+.vibe-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-lg) * 2);
+  min-height: 200px;
+}
+
+.vibe-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--status-inprogress);
+  border-radius: 50%;
+  animation: vibe-spin 0.8s linear infinite;
+}
+
+@keyframes vibe-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vibe-loading-message {
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Error State
+   ========================================================================== */
+.vibe-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-lg) * 2);
+  text-align: center;
+  min-height: 200px;
+}
+
+.vibe-error-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  color: hsl(0, 59%, 57%);
+}
+
+.vibe-error-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.vibe-error-message {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.vibe-error-details {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.vibe-retry-button {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-duration) var(--transition-timing);
+}
+
+.vibe-retry-button:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.vibe-retry-button:focus {
+  outline: 2px solid var(--status-inprogress);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Scrollbar Styling
+   ========================================================================== */
+.vibe-sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vibe-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vibe-sidebar-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+.vibe-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}

@@ -13,6 +13,7 @@ export interface StoredConfig {
   idleTimeoutMs: number;
   otelEndpoint: string;
   enabled: boolean;
+  sidebarOpen: boolean;
 }
 
 export interface StoredState {
@@ -23,7 +24,7 @@ export interface StoredState {
 }
 
 const STORAGE_KEY = 'vibe_kanban_tracker';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 export class StorageManager {
   private state: StoredState | null = null;
@@ -156,6 +157,7 @@ export class StorageManager {
         idleTimeoutMs: IDLE_TIMEOUT_MS,
         otelEndpoint: OTEL_ENDPOINT,
         enabled: true,
+        sidebarOpen: false,
       },
       pendingMetrics: [],
     };
@@ -179,16 +181,19 @@ export class StorageManager {
 
   /**
    * Migrate from older schema versions
-   * Currently only version 1 exists, but this provides the hook for future migrations
+   * Handles backwards compatibility for existing installations
    */
   private migrate(oldState: StoredState): StoredState {
     let state = { ...oldState };
 
-    // Future migrations would go here:
-    // if (state.version < 2) {
-    //   state = migrateV1ToV2(state);
-    //   state.version = 2;
-    // }
+    // V1 -> V2: Add sidebarOpen field with default value
+    if (state.version < 2) {
+      state.config = {
+        ...state.config,
+        sidebarOpen: false,
+      };
+      state.version = 2;
+    }
 
     // Ensure version is current
     state.version = STORAGE_VERSION;

@@ -13,6 +13,7 @@ import { ProjectNameCache } from './project-name-cache';
 import { ApiMetricsCollector } from './api-metrics-collector';
 import { EXPORT_INTERVAL_MS } from '../shared/constants';
 import type { ContentMessage, ScrollMessage, HumanInterventionMessage, TypingMessage, MessageSentMessage } from '../shared/types';
+import type { GetActiveTasksMessage, ActiveTasksResponse, ActiveTaskItem, ActiveTaskStatus } from '../shared/sidebar-messages';
 
 console.log('[vibe-tracker] Background script loaded');
 
@@ -269,9 +270,57 @@ async function handleGetDebugInfo(): Promise<{
   }
 }
 
+/**
+ * Handle GET_ACTIVE_TASKS message from sidebar
+ * Fetches all projects and their tasks, filters to active tasks
+ */
+async function handleGetActiveTasks(): Promise<ActiveTasksResponse> {
+  try {
+    // Fetch all projects
+    const projects = await apiClient.fetchProjects();
+    console.log('[vibe-tracker] Fetching active tasks from ' + projects.length + ' projects');
+
+    const activeTasks: ActiveTaskItem[] = [];
+
+    // For each project, fetch tasks and filter to active ones
+    for (const project of projects) {
+      const tasks = await apiClient.fetchProjectTasks(project.id);
+
+      // Filter to only inprogress and inreview tasks
+      const projectActiveTasks = tasks
+        .filter((task) => task.status === 'inprogress' || task.status === 'inreview')
+        .map((task) => ({
+          taskId: task.id,
+          taskTitle: task.title,
+          projectId: project.id,
+          projectName: project.name,
+          status: task.status as ActiveTaskStatus,
+        }));
+
+      activeTasks.push(...projectActiveTasks);
+    }
+
+    // Fetch latest attempt for each active task
+    for (const task of activeTasks) {
+      const attempts = await apiClient.fetchTaskAttempts(task.taskId);
+      if (attempts.length > 0) {
+        task.latestAttemptId = attempts[0].id; // First is newest (sorted DESC)
+        console.log('[vibe-tracker] Set latestAttemptId for task ' + task.taskId + ': ' + attempts[0].id);
+      }
+    }
+
+    console.log('[vibe-tracker] Found ' + activeTasks.length + ' active tasks');
+    return { success: true, tasks: activeTasks };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[vibe-tracker] Failed to fetch active tasks:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
 // Handle messages from content script and options page
 browser.runtime.onMessage.addListener(
-  (message: ContentMessage | OptionsMessage, sender: browser.Runtime.MessageSender) => {
+  (message: ContentMessage | OptionsMessage | GetActiveTasksMessage, sender: browser.Runtime.MessageSender) => {
     console.log('[vibe-tracker] Raw message received:', message.type, 'from:', sender.tab?.url || 'options/popup');
 
     // Handle options page messages (don't require full initialization)
@@ -288,6 +337,9 @@ browser.runtime.onMessage.addListener(
 
         case 'GET_DEBUG_INFO':
           return handleGetDebugInfo();
+
+        case 'GET_ACTIVE_TASKS':
+          return handleGetActiveTasks();
       }
     }
 

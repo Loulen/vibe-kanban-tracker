@@ -29,6 +29,17 @@ export interface Task {
 }
 
 /**
+ * Task attempt from the vibe-kanban API
+ */
+export interface TaskAttempt {
+  id: string;
+  task_id: string;
+  branch: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * API response for /api/projects endpoint
  * Actual format: {success: true, data: [...], error_data: null, message: null}
  */
@@ -46,6 +57,17 @@ interface ProjectsResponse {
 interface TasksResponse {
   success: boolean;
   data: Task[];
+  error_data: unknown;
+  message: string | null;
+}
+
+/**
+ * API response for /api/task-attempts endpoint
+ * Actual format: {success: true, data: [...], error_data: null, message: null}
+ */
+interface TaskAttemptsResponse {
+  success: boolean;
+  data: TaskAttempt[];
   error_data: unknown;
   message: string | null;
 }
@@ -134,6 +156,51 @@ export class VibeKanbanApiClient {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error(
         '[vibe-tracker] Failed to fetch tasks for project ' + projectId + ':',
+        message
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Fetch all attempts for a specific task
+   * Returns empty array on error
+   */
+  async fetchTaskAttempts(taskId: string): Promise<TaskAttempt[]> {
+    try {
+      const response = await fetch(
+        this.baseUrl + '/api/task-attempts?task_id=' + encodeURIComponent(taskId),
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error(
+          '[vibe-tracker] Failed to fetch attempts for task ' +
+            taskId +
+            ': HTTP ' +
+            response.status
+        );
+        return [];
+      }
+
+      const data: TaskAttemptsResponse = await response.json();
+      if (!data.success || !data.data) {
+        console.error('[vibe-tracker] API returned error for task attempts:', data.message);
+        return [];
+      }
+      console.log(
+        '[vibe-tracker] Fetched ' + data.data.length + ' attempts for task ' + taskId
+      );
+      return data.data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(
+        '[vibe-tracker] Failed to fetch attempts for task ' + taskId + ':',
         message
       );
       return [];

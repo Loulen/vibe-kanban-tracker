@@ -4,6 +4,7 @@ A Firefox/Zen browser extension that tracks user activity on vibe-kanban and exp
 
 ## Features
 
+- **Active Tasks Sidebar**: Toggleable sidebar displaying all tasks with "In Progress" or "In Review" status across all projects, with click-to-navigate functionality
 - **Activity Tracking**: Monitors active vs idle time while working in vibe-kanban
 - **Human Intervention Detection**: Counts messages sent to Claude (clicks on send buttons)
 - **Scroll Tracking**: Records scroll events and total scroll distance
@@ -58,6 +59,28 @@ This creates `vibe-kanban-tracker.zip` in the project root.
 4. Navigate to the `dist/` directory and select `manifest.json`
 
 The extension icon should appear in your toolbar. The extension automatically activates on `http://localhost:3069/*` (vibe-kanban).
+
+## Active Tasks Sidebar
+
+The extension provides a toggleable sidebar that displays all tasks with "In Progress" or "In Review" status from all projects.
+
+### Features
+
+- **Toggle Button**: A hamburger menu button appears in the vibe-kanban header (left of the logo)
+- **Task List**: Shows task title, project name, and status badge for each active task
+- **Status Colors**: Blue badge for "In Progress", orange badge for "In Review"
+- **Click to Navigate**: Click any task card to navigate directly to that task's detail page
+- **State Persistence**: Sidebar open/closed state persists across page refreshes
+- **Auto-Refresh**: Task list automatically refreshes every 30 seconds
+- **Last Updated**: Timestamp shows when tasks were last fetched
+
+### Usage
+
+1. Navigate to any page in vibe-kanban (`http://localhost:3069`)
+2. Click the hamburger menu button (three horizontal lines) in the header
+3. The sidebar slides in from the left showing all active tasks
+4. Click any task to navigate to its detail page
+5. Click the X button or toggle button to close the sidebar
 
 ### Permanent Installation (Recommended)
 
@@ -215,13 +238,18 @@ vibe-kanban-tracker/
 │   ├── content/              # Content script
 │   │   ├── index.ts          # Entry point
 │   │   ├── event-listeners.ts # DOM event handling
-│   │   └── url-parser.ts     # URL route parsing
+│   │   ├── url-parser.ts     # URL route parsing
+│   │   └── sidebar/          # Active tasks sidebar
+│   │       ├── sidebar.ts    # Main sidebar component
+│   │       ├── sidebar.css   # Sidebar styles
+│   │       └── task-card.ts  # Task card component
 │   ├── options/              # Options page
 │   │   ├── options.html      # UI markup
 │   │   ├── options.css       # Styles
 │   │   └── options.ts        # Options logic
 │   └── shared/               # Shared utilities
 │       ├── types.ts          # TypeScript interfaces
+│       ├── sidebar-messages.ts # Sidebar message types
 │       └── constants.ts      # Configuration constants
 ├── manifest.json             # Extension manifest (MV3)
 ├── package.json              # Dependencies
