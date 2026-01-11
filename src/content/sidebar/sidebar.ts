@@ -10,6 +10,7 @@ import sidebarStyles from './sidebar.css';
 
 // Constants
 const STORAGE_KEY_SIDEBAR_OPEN = 'vibe-sidebar-open';
+const STORAGE_KEY_SIDEBAR_LOCKED = 'vibe-sidebar-locked';
 const REFRESH_INTERVAL_MS = 10000; // 10 seconds
 
 // SVG icons
@@ -29,6 +30,14 @@ const ERROR_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
 </svg>`;
 
+const LOCK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+</svg>`;
+
+const UNLOCK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/>
+</svg>`;
+
 // UI state
 interface SidebarElements {
   host: HTMLDivElement;
@@ -37,6 +46,7 @@ interface SidebarElements {
   content: HTMLDivElement;
   lastUpdated: HTMLSpanElement;
   toggleButton: HTMLButtonElement;
+  lockButton: HTMLButtonElement;
 }
 
 // Module state
@@ -44,6 +54,7 @@ let elements: SidebarElements | null = null;
 let refreshIntervalId: ReturnType<typeof setInterval> | null = null;
 let isOpen = false;
 let lastError: string | null = null;
+let isLocked = false;
 
 /**
  * Escapes HTML to prevent XSS
@@ -105,7 +116,18 @@ function createShadowStructure(): SidebarElements {
   lastUpdated.className = 'vibe-last-updated';
   lastUpdated.textContent = 'Last updated: --:--:--';
 
+  // Create lock button
+  const lockButton = document.createElement('button');
+  lockButton.className = 'vibe-sidebar-lock';
+  lockButton.innerHTML = UNLOCK_ICON;
+  lockButton.setAttribute('aria-label', 'Lock sidebar open');
+  lockButton.setAttribute('aria-pressed', 'false');
+  lockButton.addEventListener('click', () => {
+    toggleLock();
+  });
+
   footer.appendChild(lastUpdated);
+  footer.appendChild(lockButton);
 
   // Assemble sidebar
   sidebar.appendChild(header);
@@ -150,6 +172,7 @@ function createShadowStructure(): SidebarElements {
     content,
     lastUpdated,
     toggleButton,
+    lockButton,
   };
 }
 
@@ -341,6 +364,64 @@ async function restoreSidebarState(): Promise<void> {
 }
 
 /**
+ * Toggles the lock state of the sidebar
+ */
+function toggleLock(): void {
+  if (!elements) return;
+
+  isLocked = !isLocked;
+  updateLockButtonState();
+  saveLockState(isLocked);
+  console.log('[vibe-tracker] Sidebar lock:', isLocked ? 'locked' : 'unlocked');
+}
+
+/**
+ * Updates the lock button's visual state
+ */
+function updateLockButtonState(): void {
+  if (!elements) return;
+
+  if (isLocked) {
+    elements.lockButton.innerHTML = LOCK_ICON;
+    elements.lockButton.setAttribute('aria-label', 'Unlock sidebar');
+    elements.lockButton.setAttribute('aria-pressed', 'true');
+    elements.lockButton.classList.add('locked');
+  } else {
+    elements.lockButton.innerHTML = UNLOCK_ICON;
+    elements.lockButton.setAttribute('aria-label', 'Lock sidebar open');
+    elements.lockButton.setAttribute('aria-pressed', 'false');
+    elements.lockButton.classList.remove('locked');
+  }
+}
+
+/**
+ * Saves the lock state to storage
+ */
+async function saveLockState(locked: boolean): Promise<void> {
+  try {
+    await browser.storage.local.set({ [STORAGE_KEY_SIDEBAR_LOCKED]: locked });
+  } catch (error) {
+    console.error('[vibe-tracker] Failed to save lock state:', error);
+  }
+}
+
+/**
+ * Restores the lock state from storage
+ */
+async function restoreLockState(): Promise<void> {
+  try {
+    const result = await browser.storage.local.get(STORAGE_KEY_SIDEBAR_LOCKED);
+    const storedState = result[STORAGE_KEY_SIDEBAR_LOCKED];
+    if (storedState === true) {
+      isLocked = true;
+      updateLockButtonState();
+    }
+  } catch (error) {
+    console.error('[vibe-tracker] Failed to restore lock state:', error);
+  }
+}
+
+/**
  * Injects the toggle button into the vibe-kanban header
  */
 function injectToggleButton(): boolean {
@@ -427,6 +508,9 @@ export function initializeSidebar(): void {
   document.addEventListener('click', (event: MouseEvent) => {
     if (!isOpen || !elements) return;
 
+    // Don't close if sidebar is locked
+    if (isLocked) return;
+
     const target = event.target as Node;
 
     // Check if click is outside sidebar (Shadow DOM host) and toggle button
@@ -440,6 +524,9 @@ export function initializeSidebar(): void {
 
   // Restore sidebar state from storage
   restoreSidebarState();
+
+  // Restore lock state from storage
+  restoreLockState();
 
   // Fetch tasks on initialization
   fetchAndRenderTasks();

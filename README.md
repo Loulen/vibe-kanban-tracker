@@ -60,6 +60,8 @@ This creates `vibe-kanban-tracker.zip` in the project root.
 
 The extension icon should appear in your toolbar. The extension automatically activates on `http://localhost:3069/*` (vibe-kanban).
 
+> ⚠️ **Important:** After installation, you must grant permissions for the extension to work. Go to `about:addons` → click on "Vibe Kanban Tracker" → **Permissions** tab → enable "Access your data for http://localhost:3069". See [Troubleshooting](#permissions-not-granted) for details.
+
 ## Active Tasks Sidebar
 
 The extension provides a toggleable sidebar that displays all tasks with "In Progress" or "In Review" status from all projects.
@@ -70,7 +72,8 @@ The extension provides a toggleable sidebar that displays all tasks with "In Pro
 - **Task List**: Shows task title, project name, and status badge for each active task
 - **Status Colors**: Blue badge for "In Progress", orange badge for "In Review"
 - **Click to Navigate**: Click any task card to navigate directly to that task's detail page
-- **State Persistence**: Sidebar open/closed state persists across page refreshes
+- **Lock Sidebar**: Lock button in the footer prevents the sidebar from closing when clicking outside
+- **State Persistence**: Sidebar open/closed state and lock state persist across page refreshes
 - **Auto-Refresh**: Task list automatically refreshes every 30 seconds
 - **Last Updated**: Timestamp shows when tasks were last fetched
 
@@ -80,7 +83,8 @@ The extension provides a toggleable sidebar that displays all tasks with "In Pro
 2. Click the hamburger menu button (three horizontal lines) in the header
 3. The sidebar slides in from the left showing all active tasks
 4. Click any task to navigate to its detail page
-5. Click the X button or toggle button to close the sidebar
+5. Click the lock icon in the footer to prevent the sidebar from closing when clicking outside
+6. Click the X button or toggle button to close the sidebar (works regardless of lock state)
 
 ### Permanent Installation (Recommended)
 
@@ -186,6 +190,19 @@ Use the machine filter dropdown to:
 - Identify which machine was most active
 
 ## Troubleshooting
+
+### Permissions not granted
+
+After installing the extension, Firefox/Zen requires you to explicitly grant permissions:
+
+1. Navigate to `about:addons` (or click the puzzle piece icon → "Manage Extensions")
+2. Find **"Vibe Kanban Tracker"** in the list
+3. Click on the extension to open its details
+4. Go to the **Permissions** tab
+5. Enable **"Access your data for http://localhost:3069"** (required for the extension to work)
+6. Reload any open vibe-kanban tabs
+
+**Note:** Without this permission, the extension cannot inject the sidebar or track activity on vibe-kanban pages. This is the most common issue when the extension appears installed but doesn't work.
 
 ### Extension not loading
 
