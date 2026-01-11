@@ -59,6 +59,27 @@ This creates `vibe-kanban-tracker.zip` in the project root.
 
 The extension icon should appear in your toolbar. The extension automatically activates on `http://localhost:3069/*` (vibe-kanban).
 
+### Permanent Installation (Recommended)
+
+The methods above load the extension temporarily - it will be removed when the browser restarts. For a permanent installation that survives browser restarts:
+
+1. **Sign the extension** using Mozilla's web-ext tool
+2. **Install the signed .xpi** file
+
+**Quick Start:**
+```bash
+# Set up credentials (one-time)
+cp .env.local.example .env.local
+# Edit .env.local with your Mozilla API credentials
+
+# Sign the extension
+export $(cat .env.local | xargs) && npm run sign
+
+# Install the .xpi from web-ext-artifacts/
+```
+
+For detailed instructions including how to get Mozilla API credentials, see **[INSTALLATION.md](INSTALLATION.md)**.
+
 ## Configuration
 
 Access the options page by clicking on the extension icon or right-clicking and selecting "Options".
