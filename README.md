@@ -1,6 +1,8 @@
 # Vibe Kanban Tracker
 
 A Firefox/Zen browser extension that tracks user activity on vibe-kanban and exports telemetry to OpenTelemetry for visualization in Grafana.
+<img width="717" height="631" alt="image" src="https://github.com/user-attachments/assets/e0e5bbe7-52a8-4594-9780-f7e0a17ca4aa" />
+
 
 ## Features
 
