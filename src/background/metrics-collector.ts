@@ -4,6 +4,7 @@
  */
 
 import type { ParsedRoute } from '../content/url-parser';
+import type { ProjectNameCache } from './project-name-cache';
 
 export interface MetricRecord {
   name: string;
@@ -16,6 +17,11 @@ export interface MetricRecord {
 export class MetricsCollector {
   private metrics: MetricRecord[] = [];
   private maxQueueSize: number = 1000;
+  private projectNameCache?: ProjectNameCache;
+
+  constructor(projectNameCache?: ProjectNameCache) {
+    this.projectNameCache = projectNameCache;
+  }
 
   /**
    * Record active time duration
@@ -191,6 +197,13 @@ export class MetricsCollector {
     }
     if (route.projectId) {
       attrs.project_id = route.projectId;
+      // Enrich with project name if cache is available and has the name
+      if (this.projectNameCache) {
+        const projectName = this.projectNameCache.get(route.projectId);
+        if (projectName) {
+          attrs.project_name = projectName;
+        }
+      }
     }
     if (route.taskId) {
       attrs.task_id = route.taskId;

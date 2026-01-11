@@ -6,3 +6,6 @@ export const EXPORT_INTERVAL_MS = 30000;
 
 // OpenTelemetry collector endpoint
 export const OTEL_ENDPOINT = 'http://localhost:4318';
+
+// Vibe Kanban API base URL
+export const VIBE_KANBAN_API_URL = 'http://localhost:3069';

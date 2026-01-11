@@ -8,6 +8,9 @@ import { StateMachine, type ActivityState, type StateContext } from './state-mac
 import { MetricsCollector } from './metrics-collector';
 import { OTelExporter } from './otel-exporter';
 import { StorageManager } from './storage-manager';
+import { VibeKanbanApiClient } from './api-client';
+import { ProjectNameCache } from './project-name-cache';
+import { ApiMetricsCollector } from './api-metrics-collector';
 import { EXPORT_INTERVAL_MS } from '../shared/constants';
 import type { ContentMessage, ScrollMessage, HumanInterventionMessage, TypingMessage, MessageSentMessage } from '../shared/types';
 
@@ -20,6 +23,9 @@ const storageManager = new StorageManager();
 let stateMachine: StateMachine;
 let metricsCollector: MetricsCollector;
 let otelExporter: OTelExporter;
+let projectNameCache: ProjectNameCache;
+let apiClient: VibeKanbanApiClient;
+let apiMetricsCollector: ApiMetricsCollector;
 let machineId = 'unknown-machine';
 let isInitialized = false;
 
@@ -37,8 +43,15 @@ async function initialize(): Promise<void> {
     // Initialize state machine with persisted idle timeout
     stateMachine = new StateMachine(config.idleTimeoutMs);
 
-    // Initialize metrics collector
-    metricsCollector = new MetricsCollector();
+    // Initialize project name cache (shared between collectors)
+    projectNameCache = new ProjectNameCache();
+
+    // Initialize metrics collector with project name cache
+    metricsCollector = new MetricsCollector(projectNameCache);
+
+    // Initialize API client and API metrics collector
+    apiClient = new VibeKanbanApiClient();
+    apiMetricsCollector = new ApiMetricsCollector(apiClient, projectNameCache);
 
     // Restore pending metrics from storage
     const pendingMetrics = storageManager.getPendingMetrics();
@@ -414,7 +427,21 @@ async function exportMetrics(): Promise<void> {
     return;
   }
 
-  const metrics = metricsCollector.flush();
+  // Collect event-based metrics
+  const eventMetrics = metricsCollector.flush();
+
+  // Collect API-based metrics (errors are logged but don't block export)
+  let apiMetrics: typeof eventMetrics = [];
+  try {
+    apiMetrics = await apiMetricsCollector.collect(machineId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('[vibe-tracker] API metrics collection failed, continuing with event metrics:', message);
+  }
+
+  // Combine all metrics
+  const metrics = [...eventMetrics, ...apiMetrics];
+
   if (metrics.length === 0) {
     console.log('[vibe-tracker] Export cycle - no metrics to export');
     // Clear any pending metrics in storage
@@ -425,16 +452,17 @@ async function exportMetrics(): Promise<void> {
   // Save to storage before export attempt (survives browser crash/restart)
   await storageManager.savePendingMetrics(metrics);
 
-  console.log('[vibe-tracker] Exporting ' + metrics.length + ' metrics');
+  console.log('[vibe-tracker] Exporting ' + metrics.length + ' metrics (' + eventMetrics.length + ' event, ' + apiMetrics.length + ' API)');
 
   const success = await otelExporter.export(metrics);
   if (success) {
     // Clear pending metrics from storage on success
     await storageManager.clearPendingMetrics();
   } else {
-    // Restore metrics to collector for next export attempt
-    console.warn('[vibe-tracker] Export failed, restoring metrics for retry');
-    metricsCollector.restore(metrics);
+    // Restore only event metrics to collector for next export attempt
+    // (API metrics will be re-fetched on next cycle)
+    console.warn('[vibe-tracker] Export failed, restoring event metrics for retry');
+    metricsCollector.restore(eventMetrics);
   }
 }
 
@@ -442,4 +470,4 @@ async function exportMetrics(): Promise<void> {
 initialize();
 
 // Export for potential testing
-export { stateMachine, metricsCollector, otelExporter, storageManager };
+export { stateMachine, metricsCollector, otelExporter, storageManager, projectNameCache, apiClient, apiMetricsCollector };

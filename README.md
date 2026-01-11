@@ -8,6 +8,8 @@ A Firefox/Zen browser extension that tracks user activity on vibe-kanban and exp
 - **Human Intervention Detection**: Counts messages sent to Claude (clicks on send buttons)
 - **Scroll Tracking**: Records scroll events and total scroll distance
 - **View Duration**: Tracks time spent in diff and preview views
+- **API-Based Metrics**: Polls vibe-kanban API for task counts, project stats, and age metrics
+- **Project Name Resolution**: Enriches all metrics with human-readable project names
 - **Multi-Machine Support**: Identifies metrics by machine for cross-computer comparison
 - **Persistent Metrics**: Survives browser restarts with pending metric persistence
 - **Configurable**: Options page for customizing behavior
@@ -30,7 +32,25 @@ npm run build
 
 This creates a `dist/` directory with the compiled extension.
 
+### Create Installable Package
+
+After building, create a zip file for installation:
+
+```bash
+npm run package
+```
+
+This creates `vibe-kanban-tracker.zip` in the project root.
+
 ### Load in Firefox/Zen Browser
+
+**Option 1: Load from zip file (Recommended)**
+
+1. Open your browser and navigate to `about:addons`
+2. Click the gear icon and select "Install Add-on From File..."
+3. Select the `vibe-kanban-tracker.zip` file
+
+**Option 2: Load from dist folder (Development)**
 
 1. Open your browser and navigate to `about:debugging`
 2. Click "This Firefox" (or "This Browser" in Zen)
@@ -68,22 +88,40 @@ Expand the "Debug Info" section to see:
 
 All metrics are prefixed with `vibe_kanban.` and exported to the OTel collector every 30 seconds.
 
+### Event-Based Metrics (User Activity)
+
 | Metric | Type | Description | Attributes |
 |--------|------|-------------|------------|
-| `vibe_kanban.active_time.duration_ms` | Gauge | Time spent actively working (ms) | `project_id`, `task_id`, `workspace_id`, `route_type`, `view`, `machine_id` |
-| `vibe_kanban.human_intervention.count` | Counter | Messages sent to Claude | `project_id`, `task_id`, `workspace_id`, `route_type`, `view`, `machine_id` |
+| `vibe_kanban.active_time.duration_ms` | Gauge | Time spent actively working (ms) | `project_id`, `project_name`, `task_id`, `workspace_id`, `route_type`, `view`, `machine_id` |
+| `vibe_kanban.human_intervention.count` | Counter | Messages sent to Claude | `project_id`, `project_name`, `task_id`, `workspace_id`, `route_type`, `view`, `machine_id` |
 | `vibe_kanban.scroll.count` | Counter | Number of scroll events | `machine_id` |
 | `vibe_kanban.scroll.distance_px` | Counter | Total scroll distance in pixels | `machine_id` |
-| `vibe_kanban.view.duration_ms` | Gauge | Time spent in diff/preview views (ms) | `view`, `project_id`, `task_id`, `workspace_id`, `route_type`, `machine_id` |
+| `vibe_kanban.view.duration_ms` | Gauge | Time spent in diff/preview views (ms) | `view`, `project_id`, `project_name`, `task_id`, `workspace_id`, `route_type`, `machine_id` |
+| `vibe_kanban.characters_typed.count` | Counter | Characters typed in text inputs | `project_id`, `project_name`, `task_id`, `route_type`, `machine_id` |
+| `vibe_kanban.message_sent.count` | Counter | Messages submitted | `project_id`, `project_name`, `task_id`, `route_type`, `machine_id` |
+| `vibe_kanban.message_sent.length` | Gauge | Length of submitted message | `project_id`, `project_name`, `task_id`, `route_type`, `machine_id` |
+
+### API-Based Metrics (Polled from vibe-kanban API)
+
+| Metric | Type | Description | Attributes |
+|--------|------|-------------|------------|
+| `vibe_kanban.projects.count` | Gauge | Total number of projects | `machine_id` |
+| `vibe_kanban.projects.age_hours` | Gauge | Age of project in hours | `project_id`, `project_name`, `machine_id` |
+| `vibe_kanban.tasks.count` | Gauge | Task count per status | `project_id`, `project_name`, `status`, `machine_id` |
+| `vibe_kanban.tasks.age_hours` | Gauge | Average task age per status (hours) | `project_id`, `project_name`, `status`, `machine_id` |
+| `vibe_kanban.tasks.failed_attempts` | Gauge | Tasks with failed last attempt | `project_id`, `project_name`, `machine_id` |
+| `vibe_kanban.tasks.active_attempts` | Gauge | Tasks with in-progress attempt | `project_id`, `project_name`, `machine_id` |
 
 ### Attribute Descriptions
 
 - `machine_id`: The friendly name configured in settings
-- `project_id`: The vibe-kanban project identifier
+- `project_id`: The vibe-kanban project UUID
+- `project_name`: Human-readable project name (e.g., "PDD-logging")
 - `task_id`: The current task identifier
 - `workspace_id`: The workspace identifier
-- `route_type`: Type of route (e.g., "task", "project", "home")
+- `route_type`: Type of route (e.g., "task_board", "task_detail", "workspace")
 - `view`: The current view ("diffs" or "preview")
+- `status`: Task status ("todo", "inprogress", "inreview", "done", "cancelled")
 
 ## Grafana Dashboard
 
@@ -145,8 +183,11 @@ vibe-kanban-tracker/
 ├── icons/                    # Extension icons (SVG)
 ├── src/
 │   ├── background/           # Background script
-│   │   ├── index.ts          # Main background logic
-│   │   ├── metrics-collector.ts  # Metric aggregation
+│   │   ├── index.ts          # Main background orchestrator
+│   │   ├── metrics-collector.ts  # Event-based metric aggregation
+│   │   ├── api-client.ts     # HTTP client for vibe-kanban API
+│   │   ├── api-metrics-collector.ts # API-based metrics (tasks, projects)
+│   │   ├── project-name-cache.ts # Project ID to name cache
 │   │   ├── otel-exporter.ts  # OTLP/HTTP export
 │   │   ├── state-machine.ts  # Activity state management
 │   │   └── storage-manager.ts # Config & metric persistence
@@ -159,6 +200,7 @@ vibe-kanban-tracker/
 │   │   ├── options.css       # Styles
 │   │   └── options.ts        # Options logic
 │   └── shared/               # Shared utilities
+│       ├── types.ts          # TypeScript interfaces
 │       └── constants.ts      # Configuration constants
 ├── manifest.json             # Extension manifest (MV3)
 ├── package.json              # Dependencies

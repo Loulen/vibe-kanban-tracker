@@ -44,12 +44,13 @@ export class OTelExporter {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
+        const body = JSON.stringify(payload);
         const response = await fetch(this.config.endpoint + '/v1/metrics', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(payload),
+          body,
         });
 
         if (response.ok) {
@@ -61,9 +62,12 @@ export class OTelExporter {
 
         // Non-retryable HTTP errors (4xx except 429)
         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          const responseText = await response.text();
           console.error(
-            '[vibe-tracker] Export failed with status ' + response.status + ', not retrying'
+            '[vibe-tracker] Export failed with status ' + response.status + ', response:',
+            responseText
           );
+          console.error('[vibe-tracker] Payload was:', body.substring(0, 2000));
           return false;
         }
 
@@ -141,11 +145,20 @@ export class OTelExporter {
           : { intValue: String(value) },
     }));
 
-    const dataPoint = {
+    // Use asDouble for float values, asInt for integers
+    const isFloat = !Number.isInteger(metric.value);
+    // Convert ms to ns as string to avoid precision loss (ns exceeds JS safe integer)
+    const timeUnixNano = String(metric.timestamp) + '000000';
+    const dataPoint: OTLPDataPoint = {
       attributes,
-      timeUnixNano: String(metric.timestamp * 1000000), // ms to ns
-      asInt: String(metric.value),
+      timeUnixNano,
     };
+
+    if (isFloat) {
+      dataPoint.asDouble = metric.value;
+    } else {
+      dataPoint.asInt = String(metric.value);
+    }
 
     if (metric.type === 'counter') {
       return {
@@ -184,7 +197,8 @@ interface OTLPAttribute {
 interface OTLPDataPoint {
   attributes: OTLPAttribute[];
   timeUnixNano: string;
-  asInt: string;
+  asInt?: string;
+  asDouble?: number;
 }
 
 interface OTLPMetric {
